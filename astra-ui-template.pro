@@ -1,4 +1,4 @@
-# ASTRA UI template \u2014 demo application.
+# ASTRA UI template - demo application.
 QT += core gui qml quick quickcontrols2
 CONFIG += c++17 release
 TARGET = astra-ui-demo
