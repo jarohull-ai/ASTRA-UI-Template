@@ -1,0 +1,8 @@
+#!/bin/sh
+# Build the demo application into ./build.
+set -eu
+cd "$(dirname "$0")/.."
+mkdir -p build
+cd build
+qmake6 ../astra-ui-template.pro
+make -j"$(nproc)"

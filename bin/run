@@ -1,0 +1,6 @@
+#!/bin/sh
+# Build if needed, then run the demo.
+set -eu
+cd "$(dirname "$0")/.."
+[ -x build/astra-ui-demo ] || bin/build
+exec build/astra-ui-demo "$@"

@@ -1,0 +1,7 @@
+#!/bin/sh
+# Render docs screenshots from the demo (offscreen, no window needed).
+set -eu
+cd "$(dirname "$0")/.."
+[ -x build/astra-ui-demo ] || bin/build
+./build/astra-ui-demo --screenshot "$PWD/docs/screenshot.png" --language en
+./build/astra-ui-demo --screenshot "$PWD/docs/screenshot-pl.png" --language pl
