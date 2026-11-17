@@ -3,6 +3,8 @@
         <file alias="qml/Main.qml">qml/Main.qml</file>
         <file alias="qml/TelemetryTile.qml">qml/TelemetryTile.qml</file>
         <file alias="qml/StateStrip.qml">qml/StateStrip.qml</file>
+        <file alias="qml/AgentMain.qml">qml/AgentMain.qml</file>
+        <file alias="qml/ChatBubble.qml">qml/ChatBubble.qml</file>
         <file alias="i18n/pl.json">i18n/pl.json</file>
     </qresource>
 </RCC>

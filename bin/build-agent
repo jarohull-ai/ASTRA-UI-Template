@@ -1,0 +1,8 @@
+#!/bin/sh
+# Build the agent console into ./build-agent.
+set -eu
+cd "$(dirname "$0")/.."
+mkdir -p build-agent
+cd build-agent
+qmake6 ../agent-console.pro
+make -j"$(nproc)"

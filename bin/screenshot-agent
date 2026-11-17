@@ -1,0 +1,7 @@
+#!/bin/sh
+# Render the agent console screenshots (offscreen, one turn pre-run) into docs/.
+set -eu
+cd "$(dirname "$0")/.."
+[ -x build-agent/astra-agent-console ] || bin/build-agent
+./build-agent/astra-agent-console --screenshot "$PWD/docs/screenshot-agent.png" --language en
+./build-agent/astra-agent-console --screenshot "$PWD/docs/screenshot-agent-pl.png" --language pl

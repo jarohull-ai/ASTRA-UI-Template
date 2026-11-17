@@ -6,6 +6,7 @@
 #include <QSettings>
 #include <QTemporaryDir>
 
+#include "agentmodel.h"
 #include "dashboardmodel.h"
 #include "translator.h"
 
@@ -39,6 +40,8 @@ private slots:
     void initTestCase() {
         QVERIFY(m_dir.isValid());
         QSettings::setPath(QSettings::NativeFormat, QSettings::UserScope, m_dir.path());
+        // Must happen before any QML engine imports Qt Quick Controls.
+        QQuickStyle::setStyle("Material");
     }
 
     void catalogAndDefaults() {
@@ -138,7 +141,6 @@ private slots:
     }
 
     void rendersAndResponds() {
-        QQuickStyle::setStyle("Material");
         freshScope();
         TestModel model;
         QTemporaryDir dir;
@@ -162,6 +164,88 @@ private slots:
         QVERIFY(!window->grabWindow().isNull());
     }
 
+
+    // ---- agent console ----------------------------------------------------
+
+    void agentTurnStreamsAndShowsTools() {
+        AgentModel agent;
+        const int before = agent.messages().size();
+        QCOMPARE(agent.streaming(), false);
+        agent.send(QStringLiteral("run the tests"));
+        QVERIFY(agent.streaming());
+        // The script runs a tool row, streams an answer, then closes the turn.
+        QTRY_VERIFY_WITH_TIMEOUT(!agent.streaming(), 6000);
+        QCOMPARE(agent.turns(), 1);
+        QVERIFY(agent.toolRuns() >= 1);
+        QVERIFY(agent.messages().size() > before);
+        QStringList roles;
+        for (const auto &row : agent.messages())
+            roles << row.toMap().value("role").toString();
+        QVERIFY(roles.contains("user"));
+        QVERIFY(roles.contains("tool"));
+        QVERIFY(roles.contains("agent"));
+        // Every streamed bubble is closed out, none is left mid-sentence.
+        for (const auto &row : agent.messages()) {
+            const QVariantMap m = row.toMap();
+            if (m.value("role").toString() == "agent")
+                QCOMPARE(m.value("streaming").toBool(), false);
+        }
+        QVERIFY(agent.strip().value("ready").toBool());
+        QVERIFY(agent.strip().value("score").toDouble() <= 100);
+        QVERIFY(!agent.strip().value("stateLabel").toString().isEmpty());
+        QVERIFY(agent.strip().value("series").toList().size() >= 1);
+    }
+
+    void agentStopHaltsTheStream() {
+        AgentModel agent;
+        agent.send(QStringLiteral("please rewrite this"));
+        QTest::qWait(80);
+        const int frozen = agent.messages().size();
+        agent.stop();
+        QVERIFY(!agent.streaming());
+        QTest::qWait(150);
+        QCOMPARE(agent.messages().size(), frozen);
+    }
+
+    void agentSessionsKeepTheirOwnTranscript() {
+        AgentModel agent;
+        const int first = agent.sessions().size();
+        const int firstCount = agent.messages().size();
+        agent.newSession();
+        QCOMPARE(agent.sessions().size(), first + 1);
+        QCOMPARE(agent.current(), first);
+        QCOMPARE(agent.messages().size(), 1);
+        agent.pickSession(0);
+        QCOMPARE(agent.current(), 0);
+        QCOMPARE(agent.messages().size(), firstCount);
+        QCOMPARE(agent.messageAt(0).value("role").toString(), QString("note"));
+        QVERIFY(agent.messageAt(999).isEmpty());
+    }
+
+    void agentConsoleRenders() {
+        AgentModel agent;
+        QTemporaryDir dir;
+        Translator translator(dir.path() + "/language");
+        QQmlApplicationEngine engine;
+        engine.rootContext()->setContextProperty("feed", &agent);
+        engine.rootContext()->setContextProperty("i18n", &translator);
+        engine.load(QUrl("qrc:/qml/AgentMain.qml"));
+        QVERIFY(!engine.rootObjects().isEmpty());
+        auto window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+        QVERIFY(window);
+        QTest::qWait(150);
+        auto *list = window->findChild<QObject *>("transcriptView");
+        QVERIFY(list);
+        QCOMPARE(list->property("count").toInt(), agent.messages().size());
+        // The strip only exists once a turn has run.
+        QVERIFY(agent.strip().isEmpty());
+        agent.send(QStringLiteral("test"));
+        QTRY_VERIFY_WITH_TIMEOUT(!agent.streaming(), 6000);
+        QVERIFY(!agent.strip().isEmpty());
+        window->resize(800, 620);
+        QTest::qWait(150);
+        QVERIFY(!window->grabWindow().isNull());
+    }
 };
 
 QTEST_MAIN(Tests)

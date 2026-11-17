@@ -1,0 +1,6 @@
+#!/bin/sh
+# Build if needed, then run the agent console.
+set -eu
+cd "$(dirname "$0")/.."
+[ -x build-agent/astra-agent-console ] || bin/build-agent
+exec build-agent/astra-agent-console "$@"

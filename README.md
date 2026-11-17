@@ -13,6 +13,76 @@ handles layout, history, persistence, colour and translation.
 
 ---
 
+# Agent console · branch `agent-ui`
+
+The same glass language, arranged for a conversation instead of a wall of
+metrics. This branch adds a complete second screen on top of the same
+components: session rail, streaming transcript with tool traces, a runtime
+panel and the shared state strip showing a *Governor* score for the agent turn.
+
+![Agent console](docs/screenshot-agent.png)
+
+```sh
+bin/build-agent   # qmake6 + make into ./build-agent
+bin/run-agent     # runs with a canned script, no API key
+```
+
+The English and Polish interface is the same runtime switch as the dashboard:
+
+![Agent console in Polish](docs/screenshot-agent-pl.png)
+
+## What is on this screen
+
+- **Session rail** — several threads with their own transcripts, an active dot
+  and a per-session turn count. `N` starts a new one.
+- **Transcript** — user bubbles on the right, agent bubbles on the left with a
+  blinking caret while text streams in, tool calls as compact monospace trace
+  rows (`run_tests`, `write_patch`, `read_file`) and quiet notes. The view stays
+  pinned to the newest message.
+- **Composer** — `Enter` sends, `Esc` stops the stream, `Ctrl+L` jumps back to
+  the input.
+- **Runtime panel** — model id, context meter, token counters, turns and tool
+  runs, plus the tool list with on/off dots.
+- **State strip** — the shared `StateStrip.qml`, here showing a Governor score
+  derived from context pressure and tool failures, with token latency as the
+  second line. Same dry-run wording as the dashboard: it recommends, it does not
+  act.
+
+## The data contract
+
+`src/agent/agentmodel.h` is the whole interface. It is a demo shell: `send()`
+answers from a canned script in `answerFor()` and simulates the tool rows on a
+timer, so the UI can be seen streaming without a key. To drive a real agent,
+replace two things and change nothing else:
+
+```cpp
+// 1. answerFor(): return the first token of a real completion, or better,
+//    fill m_steps yourself and let tick() stream it out.
+// 2. the tool rows: append({"role","tool"},{"tool", name},{"status","running"})
+//    when your runtime calls a tool, and close it with a "done" row.
+```
+
+| Property | Meaning |
+|---|---|
+| `sessions`, `current`, `pickSession()` , `newSession()` | threads and their transcripts |
+| `messages`, `messageAt(i)` | rows: `user`, `agent`, `tool`, `note` |
+| `streaming`, `send()`, `stop()` | one turn at a time |
+| `model`, `modelLabel`, `tools` | runtime identity and available tools |
+| `contextUsed`, `contextMax`, `tokensIn/Out`, `turns`, `toolRuns`, `failures` | the counters |
+| `strip` | the map the bottom panel draws |
+
+Fifteen tests cover both screens — including a full simulated turn, the tool
+rows, stopping mid-stream, per-session transcripts and a rendered agent window.
+
+## Branches
+
+| Branch | Contents |
+|---|---|
+| `main` | the dashboard shell: tiles, layout editing, state strip |
+| `agent-ui` | this branch: the dashboard plus the agent console |
+
+---
+
 ## What you get
 
 - **Glass tiles** with a caption, one large reading, a detail line, a sparkline with a soft
