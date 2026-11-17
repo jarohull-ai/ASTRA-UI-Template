@@ -11,6 +11,10 @@ stack and a `Canvas`.
 It is a **look and a data contract**, not a monitoring app. You supply readings; the shell
 handles layout, history, persistence, colour and translation.
 
+> **Agent console:** the same shell arranged for a conversation — session rail, streaming
+> transcript with tool traces, runtime panel — lives on the
+> [`agent-ui` branch](https://github.com/jarohull-ai/ASTRA-UI-Template/tree/agent-ui).
+
 ---
 
 ## What you get
